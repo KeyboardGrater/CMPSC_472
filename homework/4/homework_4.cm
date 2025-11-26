@@ -1,0 +1,62 @@
+// Global Variables
+binarysem q_sem_1 = 1;
+binarysem q_sem_2 = 0;
+
+binarysem op_sem_1 = 0;
+
+binarysem hm_sem_1 = 0;
+binarysem hm_sem_2 = 0;
+binarysem hm_sem_3 = 0;
+
+binarysem sw_sem_1 = 0;
+binarysem sw_sem_2 = 0;
+
+binarysem d_sem_1 = 0;
+
+void queens_script () {
+    wait(q_sem_1);                     // Allows only one to ever get past this point
+    cout << "The Queen orders a Huntsman to take Snow White into the forest and kill Snow White.\n";
+    signal(hm_sem_1);           // The huntsman has recived his orders, thus he can carry them out
+
+    // wait (q_sem_2);
+}
+void old_peddler_script () {
+    wait(op_sem_1);
+}
+void huntsman_script () {
+    wait(hm_sem_1);                   // Waits till the queen gives him orders
+    cout << "The Huntsman takes Snow White into the forst";
+    signal(sw_sem_1);
+
+    wait(hm_sem_2);
+    cout << "The Huntsman tells Snow White the Queens's pln, and let Snow White run away.\n";
+
+    //wait(hm_sem_3);
+}
+void snow_white_script () {
+    wait(sw_sem_1);
+    cout << "Snow White follows the Huntsman and entered the forst.\n";
+    signal (hm_sem_2);
+
+    // wait(sw_sem_1);
+}
+void dwarves_script () {
+    // Allow the dwares to go
+}
+
+main () {
+    string[72] intro_message;
+    stringCopy(intro_message, "Once upon a time, there lived a lovely little princess named Snow White.\n");
+
+    // Act 0: Intro
+    cout << intro_message;
+
+    // Act 1: Learning of the queens trickery
+    cobegin {
+        queens_script();
+        // old_peddler_script();
+        huntsman_script();
+        snow_white_script();
+        // dwarves_script();
+    }
+}
