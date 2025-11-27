@@ -1,6 +1,7 @@
 // Global Variables
 binarysem q_sem_1 = 1;
 binarysem q_sem_2 = 0;
+binarysem q_sem_3 = 0;
 
 binarysem op_sem_1 = 0;
 
@@ -17,14 +18,20 @@ binarysem sw_sem_4 = 0;
 int dwarves_who_left = 0;
 binarysem in_leave_cs = 1;
 
-binarysem act_1_finished = 0;
 
 
 // --------------- Functions --------------- //
 
 atomic void queens_lines (int line_number) {
-    if (line_number == 1) {
-        cout << "The Queen orders a Huntsman to take Snow White into the forest and kill Snow White.\n";
+    switch (line_number) {
+        case 1:
+            cout << "The Queen orders a Huntsman to take Snow White into the forest and kill Snow White.\n";
+            break;
+        case 2:
+            cout << "The Queen relizes that the Huntsman tricked her, and decides to kill Snow White herself.\n";
+            break;
+        case 3:
+            cout << "The Queen disguises herself as an Old Peddler.\n";
     }
 }
 void queens_script () {
@@ -32,8 +39,11 @@ void queens_script () {
     queens_lines(1);
 
     signal(hm_sem_1);           // The huntsman has recived his orders, thus he can carry them out
-
-    // wait (q_sem_2);
+    
+    wait (q_sem_2);
+    queens_lines(2);
+    queens_lines(3);
+    
 }
 
 void old_peddler_script () {
@@ -47,6 +57,9 @@ atomic void huntsman_lines (int line_number) {
     else if (line_number == 2) {
     cout << "The Huntsman tells Snow White the Queens's plan, and let Snow White run away.\n";
     }
+    else {
+        cout << "The Huntsman gives a stag's heart to the Queen.\n";
+    }
 }
 void huntsman_script () {
     wait(hm_sem_1);                   // Waits till the queen gives him orders
@@ -57,7 +70,11 @@ void huntsman_script () {
     huntsman_lines(2);
     signal(sw_sem_2);
 
-    //wait(hm_sem_3);
+    wait(hm_sem_3);
+    huntsman_lines(3);
+    signal(q_sem_2);
+    
+    // The huntsman job is finished.
 }
 
 atomic void sw_lines(int line_number) {
@@ -77,6 +94,8 @@ void snow_white_script () {
     wait(sw_sem_dl);                        // I have to make sure that they all leave before this step occures 
     sw_lines(2);
 
+    signal(hm_sem_3);
+    
     // wait(sw_sem_3);
 }
 
