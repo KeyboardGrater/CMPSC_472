@@ -10,13 +10,23 @@ binarysem hm_sem_2 = 0;
 binarysem hm_sem_3 = 0;
 
 binarysem sw_sem_1 = 0;
-binarysem sw_sem_2 = 0;
-binarysem sw_sem_dl = 0;
+binarysem sw_sem_2 = 0;                      
+binarysem sw_sem_dl = 0;                    // Once sw_sem_2 and dl are passed, act one ends
 binarysem sw_sem_4 = 0;
 
 // --- Dwarven Section --- //
-int dwarves_who_left = 0;
+int dwarf_counter = 0;                 // Tracks how many dwarves either left or returned, depends on where used
 binarysem in_leave_cs = 1;
+
+// Are we allowed to use bools, because if not
+binarysem d_1_go_home = 0;
+binarysem d_2_go_home = 0;
+binarysem d_3_go_home = 0;
+
+binarysem in_return_cs = 1;
+
+
+
 
 
 
@@ -43,7 +53,7 @@ void queens_script () {
     wait (q_sem_2);
     queens_lines(2);
     queens_lines(3);
-    
+
 }
 
 void old_peddler_script () {
@@ -93,8 +103,12 @@ void snow_white_script () {
     wait(sw_sem_2);                
     wait(sw_sem_dl);                        // I have to make sure that they all leave before this step occures 
     sw_lines(2);
-
+    
+    // Act 2 Begins
     signal(hm_sem_3);
+    signal(d_1_go_home);
+    signal(d_2_go_home);
+    signal(d_3_go_home);
     
     // wait(sw_sem_3);
 }
@@ -109,23 +123,65 @@ void d_leave_func (int dwarf_num) {
     
     print_dwarven_leave(dwarf_num);
     
-    dwarves_who_left++;
+    dwarf_counter++;
 
-    if (dwarves_who_left == 3) {
+    if (dwarf_counter == 3) {
+        dwarf_counter = 0;               // For use in when the dwarves return
         signal(sw_sem_dl);
     }
 
-    signal(in_leave_cs);
+    signal(in_leave_cs);                    // Might be an issue
 }
 
-void dwarf_1_leaves() {
+//void dwarf_1_leaves() {
+//    d_leave_func(1);
+//}
+//void dwarf_2_leaves() {
+//    d_leave_func(2);
+//}
+//void dwarf_3_leaves() {
+//    d_leave_func(3);
+//}
+
+atomic void print_d_r_last(int dwarf_num) {
+    cout << "Dwarf " << dwarf_num << " comes home, finds Snow White, and wakes Snow White up.\n";
+}
+                                            
+atomic void print_d_r_NL(int dwarf_num) {  // // NL stands for not last
+    cout << "Dwarf " << dwarf_num << " comes home, finds Snow White.\n";
+}
+
+void d_returns_func(int dwarf_num) {
+    wait(in_return_cs);
+
+    if (dwarf_counter == 2) {               // If 2, then that means that this will be the last dwarf to return
+        print_d_r_last(dwarf_num);
+    }
+    else {
+        print_d_r_NL(dwarf_num);
+    }
+
+    dwarf_counter++;
+    signal(in_return_cs);
+}
+
+void dwarf_1_lr() {
     d_leave_func(1);
+    
+    wait(d_1_go_home);
+    d_returns_func(1);
 }
-void dwarf_2_leaves() {
+void dwarf_2_lr() {
     d_leave_func(2);
+    
+    wait(d_2_go_home);
+    d_returns_func(2);
 }
-void dwarf_3_leaves() {
+void dwarf_3_lr() {
     d_leave_func(3);
+
+    wait(d_3_go_home);
+    d_returns_func(3);
 }
 
 
@@ -144,10 +200,16 @@ main () {
         huntsman_script();
         snow_white_script();
         
-        dwarf_1_leaves();
-        dwarf_2_leaves();
-        dwarf_3_leaves();
+        dwarf_1_lr();
+        dwarf_2_lr();
+        dwarf_3_lr();
 
+        //dwarf_1_leaves();
+        //dwarf_2_leaves();
+        //dwarf_3_leaves();
 
+        //dwarf_1_returns();
+        //dwarf_2_returns();
+        //dwarf_3_returns();
     }
 }
