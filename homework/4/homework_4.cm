@@ -25,10 +25,11 @@ binarysem d_3_go_home = 0;
 
 binarysem in_return_cs = 1;
 
+binarysem d_sem_3 = 0;
 
 
 
-
+int i;                                      // For some reason this needs to be a global variable?
 
 // --------------- Functions --------------- //
 
@@ -88,11 +89,16 @@ void huntsman_script () {
 }
 
 atomic void sw_lines(int line_number) {
-    if (line_number == 1) {
-    cout << "Snow White follows the Huntsman and entered the forst.\n";
-    }
-    else if (line_number == 2) {
-    cout << "Snow White escapes, finds the Dwarves' house, and falls asleep.\n";
+    switch (line_number) {
+        case 1:
+            cout << "Snow White follows the Huntsman and entered the forst.\n";
+            break;
+        case 2:
+            cout << "Snow White escapes, finds the Dwarves' house, and falls asleep.\n";
+            break;
+        case 3:
+            cout << "Snow White expalins to the dwarves what happened.\n";
+            break;
     }
 }
 void snow_white_script () {
@@ -110,7 +116,9 @@ void snow_white_script () {
     signal(d_2_go_home);
     signal(d_3_go_home);
     
-    // wait(sw_sem_3);
+    wait(sw_sem_4);
+    sw_lines(3);
+    signal(d_sem_3);
 }
 
 // ----- Dwarf Functions ----- //
@@ -133,16 +141,6 @@ void d_leave_func (int dwarf_num) {
     signal(in_leave_cs);                    // Might be an issue
 }
 
-//void dwarf_1_leaves() {
-//    d_leave_func(1);
-//}
-//void dwarf_2_leaves() {
-//    d_leave_func(2);
-//}
-//void dwarf_3_leaves() {
-//    d_leave_func(3);
-//}
-
 atomic void print_d_r_last(int dwarf_num) {
     cout << "Dwarf " << dwarf_num << " comes home, finds Snow White, and wakes Snow White up.\n";
 }
@@ -156,12 +154,13 @@ void d_returns_func(int dwarf_num) {
 
     if (dwarf_counter == 2) {               // If 2, then that means that this will be the last dwarf to return
         print_d_r_last(dwarf_num);
+        signal(sw_sem_4);
     }
     else {
         print_d_r_NL(dwarf_num);
+        dwarf_counter++;
     }
 
-    dwarf_counter++;
     signal(in_return_cs);
 }
 
@@ -184,6 +183,20 @@ void dwarf_3_lr() {
     d_returns_func(3);
 }
 
+atomic void d_allow_stay (int dwarf_num) {
+    cout << "Dwarf " << dwarf_num << " lets her stay as a housemaid, with other dwarves.\n";
+}
+
+void dwarfs_shared() {
+    wait(d_sem_3);
+
+    for (i = 1; i < 4; ++i) {
+        d_allow_stay(i);
+    }
+
+    signal(d_sem_3);
+}
+
 
 
 main () {
@@ -203,13 +216,6 @@ main () {
         dwarf_1_lr();
         dwarf_2_lr();
         dwarf_3_lr();
-
-        //dwarf_1_leaves();
-        //dwarf_2_leaves();
-        //dwarf_3_leaves();
-
-        //dwarf_1_returns();
-        //dwarf_2_returns();
-        //dwarf_3_returns();
+        dwarfs_shared();
     }
 }
