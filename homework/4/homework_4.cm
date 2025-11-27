@@ -17,35 +17,65 @@ binarysem sw_sem_4 = 0;
 int dwarves_who_left = 0;
 binarysem in_leave_cs = 1;
 
+binarysem act_1_finished = 0;
+
+
+// --------------- Functions --------------- //
+
+atomic void queens_lines (int line_number) {
+    if (line_number == 1) {
+        cout << "The Queen orders a Huntsman to take Snow White into the forest and kill Snow White.\n";
+    }
+}
 void queens_script () {
     wait(q_sem_1);                     // Allows only one to ever get past this point
-    cout << "The Queen orders a Huntsman to take Snow White into the forest and kill Snow White.\n";
+    queens_lines(1);
+
     signal(hm_sem_1);           // The huntsman has recived his orders, thus he can carry them out
 
     // wait (q_sem_2);
 }
+
 void old_peddler_script () {
     wait(op_sem_1);
 }
+
+atomic void huntsman_lines (int line_number) {
+    if (line_number == 1) {
+    cout << "The Huntsman takes Snow White into the forst\n";
+    }
+    else if (line_number == 2) {
+    cout << "The Huntsman tells Snow White the Queens's plan, and let Snow White run away.\n";
+    }
+}
 void huntsman_script () {
     wait(hm_sem_1);                   // Waits till the queen gives him orders
-    cout << "The Huntsman takes Snow White into the forst\n";
+    huntsman_lines(1);
     signal(sw_sem_1);
 
     wait(hm_sem_2);
-    cout << "The Huntsman tells Snow White the Queens's plan, and let Snow White run away.\n";
+    huntsman_lines(2);
     signal(sw_sem_2);
 
     //wait(hm_sem_3);
 }
+
+atomic void sw_lines(int line_number) {
+    if (line_number == 1) {
+    cout << "Snow White follows the Huntsman and entered the forst.\n";
+    }
+    else if (line_number == 2) {
+    cout << "Snow White escapes, finds the Dwarves' house, and falls asleep.\n";
+    }
+}
 void snow_white_script () {
     wait(sw_sem_1);
-    cout << "Snow White follows the Huntsman and entered the forst.\n";
+    sw_lines(1);
     signal(hm_sem_2);
 
     wait(sw_sem_2);                
     wait(sw_sem_dl);                        // I have to make sure that they all leave before this step occures 
-    cout << "Snow White escapes, finds the Dwarves' house, and falls asleep.\n";
+    sw_lines(2);
 
     // wait(sw_sem_3);
 }
@@ -88,8 +118,8 @@ main () {
     // Act 0: Intro
     cout << intro_message;
 
-    // Act 1: Learning of the queens intentions
     cobegin {
+        // Act 1: Learning of the queens intentions
         queens_script();
         // old_peddler_script();
         huntsman_script();
@@ -98,5 +128,7 @@ main () {
         dwarf_1_leaves();
         dwarf_2_leaves();
         dwarf_3_leaves();
+
+
     }
 }
