@@ -10,8 +10,12 @@ binarysem hm_sem_3 = 0;
 
 binarysem sw_sem_1 = 0;
 binarysem sw_sem_2 = 0;
+binarysem sw_sem_dl = 0;
+binarysem sw_sem_4 = 0;
 
-binarysem d_sem_1 = 0;
+// --- Dwarven Section --- //
+int dwarves_who_left = 0;
+binarysem in_leave_cs = 1;
 
 void queens_script () {
     wait(q_sem_1);                     // Allows only one to ever get past this point
@@ -25,24 +29,57 @@ void old_peddler_script () {
 }
 void huntsman_script () {
     wait(hm_sem_1);                   // Waits till the queen gives him orders
-    cout << "The Huntsman takes Snow White into the forst";
+    cout << "The Huntsman takes Snow White into the forst\n";
     signal(sw_sem_1);
 
     wait(hm_sem_2);
-    cout << "The Huntsman tells Snow White the Queens's pln, and let Snow White run away.\n";
+    cout << "The Huntsman tells Snow White the Queens's plan, and let Snow White run away.\n";
+    signal(sw_sem_2);
 
     //wait(hm_sem_3);
 }
 void snow_white_script () {
     wait(sw_sem_1);
     cout << "Snow White follows the Huntsman and entered the forst.\n";
-    signal (hm_sem_2);
+    signal(hm_sem_2);
 
-    // wait(sw_sem_1);
+    wait(sw_sem_2);                
+    wait(sw_sem_dl);                        // I have to make sure that they all leave before this step occures 
+    cout << "Snow White escapes, finds the Dwarves' house, and falls asleep.\n";
+
+    // wait(sw_sem_3);
 }
-void dwarves_script () {
-    // Allow the dwares to go
+
+// ----- Dwarf Functions ----- //
+atomic void print_dwarven_leave(int dwarf_num) {
+    cout << "Dwarf " << dwarf_num << " goes to work in the morning\n";
 }
+
+void d_leave_func (int dwarf_num) {
+    wait(in_leave_cs);
+    
+    print_dwarven_leave(dwarf_num);
+    
+    dwarves_who_left++;
+
+    if (dwarves_who_left == 3) {
+        signal(sw_sem_dl);
+    }
+
+    signal(in_leave_cs);
+}
+
+void dwarf_1_leaves() {
+    d_leave_func(1);
+}
+void dwarf_2_leaves() {
+    d_leave_func(2);
+}
+void dwarf_3_leaves() {
+    d_leave_func(3);
+}
+
+
 
 main () {
     string[72] intro_message;
@@ -51,12 +88,15 @@ main () {
     // Act 0: Intro
     cout << intro_message;
 
-    // Act 1: Learning of the queens trickery
+    // Act 1: Learning of the queens intentions
     cobegin {
         queens_script();
         // old_peddler_script();
         huntsman_script();
         snow_white_script();
-        // dwarves_script();
+        
+        dwarf_1_leaves();
+        dwarf_2_leaves();
+        dwarf_3_leaves();
     }
 }
