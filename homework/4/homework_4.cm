@@ -14,6 +14,8 @@ binarysem sw_sem_2 = 0;
 binarysem sw_sem_dl = 0;                    // Once sw_sem_2 and dl are passed, act one ends
 binarysem sw_sem_4 = 0;
 
+binarysem sw_sem_l_4_open = 1;
+
 // --- Dwarven Section --- //
 int dwarf_counter = 0;                 // Tracks how many dwarves either left or returned, depends on where used
 binarysem in_leave_cs = 1;
@@ -27,23 +29,41 @@ binarysem in_return_cs = 1;
 
 binarysem d_sem_3 = 0;
 
+binarysem d_sem_w_1 = 0;
+binarysem d_sem_w_2 = 0;
+binarysem d_sem_w_3 = 0;
 
+binarysem in_d_w_cs = 1;                    // Semaphore for critical section in dwarf washing 
 
-int i;                                      // For some reason this needs to be a global variable?
+semaphore d_w_r_e = 0;                      // A dwarf washed but waiting for food made.                        
+
+binarysem d_1_ate = 0;
+binarysem d_2_ate = 0;
+binarysem d_3_ate = 0;
+
+int wash_order [3];
+
+int i;                                      
+int j = 0;
+int k = 0;
 
 // --------------- Functions --------------- //
 
 atomic void queens_lines (int line_number) {
+    cout << "Queen ";
+
     switch (line_number) {
         case 1:
-            cout << "The Queen orders a Huntsman to take Snow White into the forest and kill Snow White.\n";
+            cout << "orders Huntsman take SW into forest and kill SW";
             break;
         case 2:
-            cout << "The Queen relizes that the Huntsman tricked her, and decides to kill Snow White herself.\n";
+            cout << "relizes Huntsman tricked her, and decides to kill SW herself";
             break;
         case 3:
-            cout << "The Queen disguises herself as an Old Peddler.\n";
+            cout << "disguises as Old Peddler";
     }
+
+    cout << ".\n";
 }
 void queens_script () {
     wait(q_sem_1);                     // Allows only one to ever get past this point
@@ -62,15 +82,19 @@ void old_peddler_script () {
 }
 
 atomic void huntsman_lines (int line_number) {
+    cout << "Huntsman ";
+
     if (line_number == 1) {
-    cout << "The Huntsman takes Snow White into the forst\n";
+    cout << "takes SW into forst";
     }
     else if (line_number == 2) {
-    cout << "The Huntsman tells Snow White the Queens's plan, and let Snow White run away.\n";
+    cout << "tells SW the Queens's plan, and let SW run away";
     }
     else {
-        cout << "The Huntsman gives a stag's heart to the Queen.\n";
+        cout << "gives stag's heart to Queen";
     }
+
+    cout << ".\n";
 }
 void huntsman_script () {
     wait(hm_sem_1);                   // Waits till the queen gives him orders
@@ -89,18 +113,49 @@ void huntsman_script () {
 }
 
 atomic void sw_lines(int line_number) {
+    cout << "SW ";
+
     switch (line_number) {
         case 1:
-            cout << "Snow White follows the Huntsman and entered the forst.\n";
+            cout << "follows Huntsman and entered forst";
             break;
         case 2:
-            cout << "Snow White escapes, finds the Dwarves' house, and falls asleep.\n";
+            cout << "escapes, finds Dwarves' house, and falls asleep";
             break;
         case 3:
-            cout << "Snow White expalins to the dwarves what happened.\n";
+            cout << "expalins to dwarves what happened";
             break;
     }
+
+    cout << ".\n";
 }
+
+atomic void sw_line_4_msg (int dwarf_num) {
+    cout << "SW prepares lunch for Dwarf " << dwarf_num << ".\n";
+} 
+
+void sw_line_4_func () {
+    int dwarf_num;
+
+    wait(sw_sem_l_4_open);
+    dwarf_num = wash_order[j];
+    sw_line_4_msg(dwarf_num);
+
+    switch (dwarf_num) {
+        case 1:
+            signal(d_1_ate);
+            break;
+        case 2:
+            signal(d_2_ate);
+            break;
+        case 3:
+            signal(d_3_ate);
+            break;
+    }
+    j++;
+    signal(sw_sem_l_4_open);
+}
+
 void snow_white_script () {
     wait(sw_sem_1);
     sw_lines(1);
@@ -119,11 +174,21 @@ void snow_white_script () {
     wait(sw_sem_4);
     sw_lines(3);
     signal(d_sem_3);
+
+
+    for (k = 1; k < 4; ++k) {
+        wait(d_w_r_e);                         // Wait for a dwarf to finish washing
+        sw_line_4_func();
+    }
+
+    //wait(d_w_r_e);                          // Wait for a dwarf to finish washing
+    //sw_line_4_func();
+    
 }
 
 // ----- Dwarf Functions ----- //
 atomic void print_dwarven_leave(int dwarf_num) {
-    cout << "Dwarf " << dwarf_num << " goes to work in the morning\n";
+    cout << "Dwarf " << dwarf_num << " goes to work in morning.\n";
 }
 
 void d_leave_func (int dwarf_num) {
@@ -142,11 +207,11 @@ void d_leave_func (int dwarf_num) {
 }
 
 atomic void print_d_r_last(int dwarf_num) {
-    cout << "Dwarf " << dwarf_num << " comes home, finds Snow White, and wakes Snow White up.\n";
+    cout << "Dwarf " << dwarf_num << " comes home, finds SW, and wakes SW up.\n";
 }
                                             
 atomic void print_d_r_NL(int dwarf_num) {  // // NL stands for not last
-    cout << "Dwarf " << dwarf_num << " comes home, finds Snow White.\n";
+    cout << "Dwarf " << dwarf_num << " comes home, finds SW.\n";
 }
 
 void d_returns_func(int dwarf_num) {
@@ -164,27 +229,63 @@ void d_returns_func(int dwarf_num) {
     signal(in_return_cs);
 }
 
+atomic void d_wash_msg (int dwarf_num) {
+    cout << "Dwarf " << dwarf_num << " washes for lunch.\n";
+}
+
+void dwarf_washing (int dwarf_num) {
+    wait(in_d_w_cs);
+
+    wash_order[i] = dwarf_num;
+    d_wash_msg(dwarf_num);
+    signal(d_w_r_e);                                        // WHy only once does it fire?
+    i++;
+
+    signal(in_d_w_cs);
+}
+atomic void dwarf_ate(int dwarf_num) {
+    cout << "Dwarf " << dwarf_num << " eats lunch and foes to work.\n";
+}
+
 void dwarf_1_lr() {
     d_leave_func(1);
     
     wait(d_1_go_home);
     d_returns_func(1);
+
+    wait(d_sem_w_1);
+    dwarf_washing(1);
+
+    wait(d_1_ate);
+    dwarf_ate(1);
 }
 void dwarf_2_lr() {
     d_leave_func(2);
     
     wait(d_2_go_home);
     d_returns_func(2);
+
+    wait(d_sem_w_2);
+    dwarf_washing(2);
+
+    wait(d_2_ate);
+    dwarf_ate(2);
 }
 void dwarf_3_lr() {
     d_leave_func(3);
 
     wait(d_3_go_home);
     d_returns_func(3);
+
+    wait(d_sem_w_3);
+    dwarf_washing(3);
+
+    wait(d_3_ate);
+    dwarf_ate(3);
 }
 
 atomic void d_allow_stay (int dwarf_num) {
-    cout << "Dwarf " << dwarf_num << " lets her stay as a housemaid, with other dwarves.\n";
+    cout << "Dwarf " << dwarf_num << " lets her stay as housemaid, with other dwarves.\n";
 }
 
 void dwarfs_shared() {
@@ -195,13 +296,20 @@ void dwarfs_shared() {
     }
 
     signal(d_sem_3);
+
+    if (i == 4) {
+        i = 0;
+        signal(d_sem_w_1);
+        signal(d_sem_w_2);
+        signal(d_sem_w_3);
+    }
 }
 
 
 
 main () {
     string[72] intro_message;
-    stringCopy(intro_message, "Once upon a time, there lived a lovely little princess named Snow White.\n");
+    stringCopy(intro_message, "Once upon a time, there lived a lovely little princess named SW.\n");
 
     // Act 0: Intro
     cout << intro_message;
