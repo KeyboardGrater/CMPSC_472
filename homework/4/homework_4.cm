@@ -4,6 +4,7 @@ binarysem q_sem_2 = 0;
 binarysem q_sem_3 = 0;
 
 binarysem op_sem_1 = 0;
+binarysem op_sem_2 = 0;
 
 binarysem hm_sem_1 = 0;
 binarysem hm_sem_2 = 0;
@@ -15,6 +16,8 @@ binarysem sw_sem_dl = 0;                    // Once sw_sem_2 and dl are passed, 
 binarysem sw_sem_4 = 0;
 
 binarysem sw_sem_l_4_open = 1;
+binarysem sw_sem_5 = 0;
+binarysem sw_sem_6 = 0;                     // Semaphore for SW to eat the poisned apple, and fall into a coma
 
 // --- Dwarven Section --- //
 int dwarf_counter = 0;                 // Tracks how many dwarves either left or returned, depends on where used
@@ -61,6 +64,7 @@ atomic void queens_lines (int line_number) {
             break;
         case 3:
             cout << "disguises as Old Peddler";
+            break;
     }
 
     cout << ".\n";
@@ -77,8 +81,29 @@ void queens_script () {
 
 }
 
-void old_peddler_script () {
+atomic void old_ped_lines (int line_number) {
+    cout << "OP ";
+    switch (line_number) {
+        case 1:
+            cout << "knocks on Dwarves house";
+            break;
+        case 2:
+            cout << "offers SW poisoned apple";
+            break;
+    }
+    cout << ".\n";
+}
+
+void old_ped_script () {
     wait(op_sem_1);
+    old_ped_lines(1);
+    signal(sw_sem_5);
+
+    
+    wait(op_sem_2);                         // Wait for Snow White to answer the door
+    old_ped_lines(2);
+    signal(sw_sem_6);                       // Signal allowing SW to eat the apple
+
 }
 
 atomic void huntsman_lines (int line_number) {
@@ -124,6 +149,15 @@ atomic void sw_lines(int line_number) {
             break;
         case 3:
             cout << "expalins to dwarves what happened";
+            break;
+        case 5:
+            cout << "listens to knocking sounds and opens door";
+            break;
+        case 6:
+            cout << "eats poisoned apple";
+            break;
+        case 7:
+            cout << "falls into coma";
             break;
     }
 
@@ -181,9 +215,18 @@ void snow_white_script () {
         sw_line_4_func();
     }
 
-    //wait(d_w_r_e);                          // Wait for a dwarf to finish washing
-    //sw_line_4_func();
-    
+    // Once all the dwarves have left, let the Old Peddler arrive
+    signal(op_sem_1);
+
+    // The old peddler knocks on the door
+    wait(sw_sem_5);
+    sw_lines(5);
+    signal(op_sem_2);
+
+    wait(sw_sem_6);                         // SW is given the poisoned apple
+    sw_lines(6);                            // Eats the poisned apple
+    sw_lines(7);                            // <---------------------------- Could this cause an issue, I.e 7 before 6
+    // Immediately, after eating apple, she falls into a coma
 }
 
 // ----- Dwarf Functions ----- //
@@ -317,7 +360,7 @@ main () {
     cobegin {
         // Act 1: Learning of the queens intentions
         queens_script();
-        // old_peddler_script();
+        old_ped_script();
         huntsman_script();
         snow_white_script();
         
