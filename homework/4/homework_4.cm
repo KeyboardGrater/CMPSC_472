@@ -44,11 +44,23 @@ binarysem d_1_ate = 0;
 binarysem d_2_ate = 0;
 binarysem d_3_ate = 0;
 
+binarysem d_find_sw_1 = 0;                    // Sem for all the dwarves to return home and find Snow White
+binarysem d_find_sw_2 = 0;
+binarysem d_find_sw_3 = 0;  
+
+binarysem d_f_sw_c_cs = 1;                  // Critical section for func of dwarves returning home and SW in coma
+
+binarysem d_casket_1 = 0;
+binarysem d_casket_2 = 0;
+binarysem d_casket_3 = 0;
+
 int wash_order [3];
 
 int i;                                      
 int j = 0;
 int k = 0;
+
+
 
 // --------------- Functions --------------- //
 
@@ -57,10 +69,10 @@ atomic void queens_lines (int line_number) {
 
     switch (line_number) {
         case 1:
-            cout << "orders Huntsman take SW into forest and kill SW";
+            cout << "orders HM take SW into forest and kill SW";
             break;
         case 2:
-            cout << "relizes Huntsman tricked her, and decides to kill SW herself";
+            cout << "relizes HM tricked her, and decides to kill SW herself";
             break;
         case 3:
             cout << "disguises as Old Peddler";
@@ -85,7 +97,7 @@ atomic void old_ped_lines (int line_number) {
     cout << "OP ";
     switch (line_number) {
         case 1:
-            cout << "knocks on Dwarves house";
+            cout << "knocks on Dwarves' house";
             break;
         case 2:
             cout << "offers SW poisoned apple";
@@ -107,13 +119,13 @@ void old_ped_script () {
 }
 
 atomic void huntsman_lines (int line_number) {
-    cout << "Huntsman ";
+    cout << "HM ";
 
     if (line_number == 1) {
     cout << "takes SW into forst";
     }
     else if (line_number == 2) {
-    cout << "tells SW the Queens's plan, and let SW run away";
+    cout << "tells SW Queens's plan, and let SW run away";
     }
     else {
         cout << "gives stag's heart to Queen";
@@ -142,7 +154,7 @@ atomic void sw_lines(int line_number) {
 
     switch (line_number) {
         case 1:
-            cout << "follows Huntsman and entered forst";
+            cout << "follows HM and entered forst";
             break;
         case 2:
             cout << "escapes, finds Dwarves' house, and falls asleep";
@@ -214,6 +226,7 @@ void snow_white_script () {
         wait(d_w_r_e);                         // Wait for a dwarf to finish washing
         sw_line_4_func();
     }
+    k = 0;                                     // Reset for use first in line of finding SW in a coma.
 
     // Once all the dwarves have left, let the Old Peddler arrive
     signal(op_sem_1);
@@ -227,6 +240,10 @@ void snow_white_script () {
     sw_lines(6);                            // Eats the poisned apple
     sw_lines(7);                            // <---------------------------- Could this cause an issue, I.e 7 before 6
     // Immediately, after eating apple, she falls into a coma
+
+    signal(d_find_sw_1);
+    signal(d_find_sw_2);
+    signal(d_find_sw_3);
 }
 
 // ----- Dwarf Functions ----- //
@@ -290,6 +307,43 @@ atomic void dwarf_ate(int dwarf_num) {
     cout << "Dwarf " << dwarf_num << " eats lunch and foes to work.\n";
 }
 
+// Dwarf finds Snow White in coma lines
+atomic void d_f_sw_in_c_lines (int dwarf_number, int first_home) {
+    cout << "Dwarf " << dwarf_number << " comes home";
+    
+    if (first_home == 1) {                  // If this dwarve is the first home
+        cout << ", finds SW dead, calls other dwarves";
+    }
+
+    cout << ".\n";
+}
+
+// Dwarf return home and find Snow White (in a coma)
+void d_ret_h_f_sw (int dwarf_num) {
+    wait(d_f_sw_c_cs);
+
+    if (k == 0) {                           // If k == 0: Then this is the first dwarf to return
+        d_f_sw_in_c_lines(dwarf_num, 1);
+    }
+    else {
+        d_f_sw_in_c_lines(dwarf_num, 0);
+    }
+    k++;
+
+    if (k == 3) {
+        signal(d_casket_1);
+        signal(d_casket_2);
+        signal(d_casket_3);
+    }
+
+    signal(d_f_sw_c_cs);
+
+}
+
+atomic void dwarf_casket (int dwarf_num) {
+    cout << "Dwarf " << dwarf_num << " places SW in glass casket as funeral for her, with other dwarves.\n";
+}
+
 void dwarf_1_lr() {
     d_leave_func(1);
     
@@ -301,6 +355,12 @@ void dwarf_1_lr() {
 
     wait(d_1_ate);
     dwarf_ate(1);
+
+    wait(d_find_sw_1);
+    d_ret_h_f_sw(1);
+
+    wait(d_casket_1);
+    dwarf_casket(1);
 }
 void dwarf_2_lr() {
     d_leave_func(2);
@@ -313,6 +373,12 @@ void dwarf_2_lr() {
 
     wait(d_2_ate);
     dwarf_ate(2);
+
+    wait(d_find_sw_2);
+    d_ret_h_f_sw(2);
+
+    wait(d_casket_2);
+    dwarf_casket(2);
 }
 void dwarf_3_lr() {
     d_leave_func(3);
@@ -325,6 +391,12 @@ void dwarf_3_lr() {
 
     wait(d_3_ate);
     dwarf_ate(3);
+
+    wait(d_find_sw_3);
+    d_ret_h_f_sw(3);
+
+    wait(d_casket_3);
+    dwarf_casket(3);
 }
 
 atomic void d_allow_stay (int dwarf_num) {
@@ -351,12 +423,10 @@ void dwarfs_shared() {
 
 
 main () {
-    string[72] intro_message;
-    stringCopy(intro_message, "Once upon a time, there lived a lovely little princess named SW.\n");
+    cout << "Once upon a time, there lived a lovely little princess named SW.\n";
 
     // Act 0: Intro
-    cout << intro_message;
-
+    
     cobegin {
         // Act 1: Learning of the queens intentions
         queens_script();
