@@ -54,19 +54,21 @@ binarysem d_casket_1 = 0;
 binarysem d_casket_2 = 0;
 binarysem d_casket_3 = 0;
 
+binarysem print_mutex = 1;                  // Allows only one string to print at a time (CS for print func)
+
 int wash_order [3];
 
 int i;                                      
 int j = 0;
 int k = 0;
 
-
-
 // --------------- Functions --------------- //
 
-atomic void queens_lines (int line_number) {
+void queens_lines (int line_number) {
+    wait(print_mutex);
+    
     cout << "Queen ";
-
+    
     switch (line_number) {
         case 1:
             cout << "orders HM take SW into forest and kill SW";
@@ -78,8 +80,10 @@ atomic void queens_lines (int line_number) {
             cout << "disguises as Old Peddler";
             break;
     }
-
+    
     cout << ".\n";
+
+    signal(print_mutex);
 }
 void queens_script () {
     wait(q_sem_1);                     // Allows only one to ever get past this point
@@ -93,8 +97,11 @@ void queens_script () {
 
 }
 
-atomic void old_ped_lines (int line_number) {
+void old_ped_lines (int line_number) {
+    wait(print_mutex);
+    
     cout << "OP ";
+    
     switch (line_number) {
         case 1:
             cout << "knocks on Dwarves' house";
@@ -103,8 +110,12 @@ atomic void old_ped_lines (int line_number) {
             cout << "offers SW poisoned apple";
             break;
     }
+    
     cout << ".\n";
+
+    signal(print_mutex);
 }
+
 
 void old_ped_script () {
     wait(op_sem_1);
@@ -118,7 +129,9 @@ void old_ped_script () {
 
 }
 
-atomic void huntsman_lines (int line_number) {
+void huntsman_lines (int line_number) {
+    wait(print_mutex);
+
     cout << "HM ";
 
     if (line_number == 1) {
@@ -132,6 +145,8 @@ atomic void huntsman_lines (int line_number) {
     }
 
     cout << ".\n";
+
+    signal(print_mutex);
 }
 void huntsman_script () {
     wait(hm_sem_1);                   // Waits till the queen gives him orders
@@ -149,7 +164,9 @@ void huntsman_script () {
     // The huntsman job is finished.
 }
 
-atomic void sw_lines(int line_number) {
+void sw_lines(int line_number) {
+    wait(print_mutex);
+    
     cout << "SW ";
 
     switch (line_number) {
@@ -174,10 +191,16 @@ atomic void sw_lines(int line_number) {
     }
 
     cout << ".\n";
+
+    signal(print_mutex);
 }
 
-atomic void sw_line_4_msg (int dwarf_num) {
+void sw_line_4_msg (int dwarf_num) {
+    wait(print_mutex);
+
     cout << "SW prepares lunch for Dwarf " << dwarf_num << ".\n";
+
+    signal(print_mutex);
 } 
 
 void sw_line_4_func () {
@@ -247,8 +270,12 @@ void snow_white_script () {
 }
 
 // ----- Dwarf Functions ----- //
-atomic void print_dwarven_leave(int dwarf_num) {
+void print_dwarven_leave(int dwarf_num) {
+    wait(print_mutex);
+    
     cout << "Dwarf " << dwarf_num << " goes to work in morning.\n";
+
+    signal(print_mutex);
 }
 
 void d_leave_func (int dwarf_num) {
@@ -266,12 +293,20 @@ void d_leave_func (int dwarf_num) {
     signal(in_leave_cs);                    // Might be an issue
 }
 
-atomic void print_d_r_last(int dwarf_num) {
+void print_d_r_last(int dwarf_num) {
+    wait(print_mutex);
+
     cout << "Dwarf " << dwarf_num << " comes home, finds SW, and wakes SW up.\n";
+
+    signal(print_mutex);
 }
                                             
-atomic void print_d_r_NL(int dwarf_num) {  // // NL stands for not last
+void print_d_r_NL(int dwarf_num) {  // // NL stands for not last
+    wait(print_mutex);
+
     cout << "Dwarf " << dwarf_num << " comes home, finds SW.\n";
+
+    signal(print_mutex);
 }
 
 void d_returns_func(int dwarf_num) {
@@ -289,8 +324,12 @@ void d_returns_func(int dwarf_num) {
     signal(in_return_cs);
 }
 
-atomic void d_wash_msg (int dwarf_num) {
+void d_wash_msg (int dwarf_num) {
+    wait(print_mutex);
+
     cout << "Dwarf " << dwarf_num << " washes for lunch.\n";
+
+    signal(print_mutex);
 }
 
 void dwarf_washing (int dwarf_num) {
@@ -303,12 +342,18 @@ void dwarf_washing (int dwarf_num) {
 
     signal(in_d_w_cs);
 }
-atomic void dwarf_ate(int dwarf_num) {
+void dwarf_ate(int dwarf_num) {
+    wait(print_mutex);
+
     cout << "Dwarf " << dwarf_num << " eats lunch and foes to work.\n";
+
+    signal(print_mutex);
 }
 
 // Dwarf finds Snow White in coma lines
-atomic void d_f_sw_in_c_lines (int dwarf_number, int first_home) {
+void d_f_sw_in_c_lines (int dwarf_number, int first_home) {
+    wait(print_mutex);
+
     cout << "Dwarf " << dwarf_number << " comes home";
     
     if (first_home == 1) {                  // If this dwarve is the first home
@@ -316,6 +361,8 @@ atomic void d_f_sw_in_c_lines (int dwarf_number, int first_home) {
     }
 
     cout << ".\n";
+
+    signal(print_mutex);
 }
 
 // Dwarf return home and find Snow White (in a coma)
@@ -340,8 +387,12 @@ void d_ret_h_f_sw (int dwarf_num) {
 
 }
 
-atomic void dwarf_casket (int dwarf_num) {
+void dwarf_casket (int dwarf_num) {
+    wait(print_mutex);
+
     cout << "Dwarf " << dwarf_num << " places SW in glass casket as funeral for her, with other dwarves.\n";
+
+    signal(print_mutex);
 }
 
 void dwarf_1_lr() {
@@ -399,8 +450,12 @@ void dwarf_3_lr() {
     dwarf_casket(3);
 }
 
-atomic void d_allow_stay (int dwarf_num) {
+void d_allow_stay (int dwarf_num) {
+    wait(print_mutex);
+
     cout << "Dwarf " << dwarf_num << " lets her stay as housemaid, with other dwarves.\n";
+
+    signal(print_mutex);
 }
 
 void dwarfs_shared() {
@@ -426,7 +481,7 @@ main () {
     cout << "Once upon a time, there lived a lovely little princess named SW.\n";
 
     // Act 0: Intro
-    
+
     cobegin {
         // Act 1: Learning of the queens intentions
         queens_script();
