@@ -71,54 +71,6 @@ int j = 0;                                  // Used for the iterating over the d
 int k = 0;                                  // Used for iteration in dwarf washing and dwarf return home second time
 
 int DELAY = 54;
-
-// --------------- Initalize Functions --------------- //
-initalsem(q_sem_1,1);
-initalsem(q_sem_2,0);
-
-initalsem(op_sem_1,0);
-initalsem(op_sem_2,0);
-
-initalsem(hm_sem_1,0);
-initalsem(hm_sem_2,0);
-initalsem(hm_sem_3,0);
-
-initalsem(sw_sem_1,0);
-initalsem(sw_sem_2,0);
-initalsem(sw_sem_dl,0);
-initalsem(sw_sem_4,0);
-initalsem(sw_sem_l_4_open, 1);
-initalsem(sw_sem_5,0);
-initalsem(sw_sem_6,0);
-
-initalsem(in_leave_cs,1);
-initalsem(d_1_go_home,0);
-initalsem(d_2_go_home,0);
-initalsem(d_3_go_home,0);
-initalsem(in_return_cs,1);
-initalsem(d_sem_3,0);
-initalsem(d_sem_w_1,0);
-initalsem(d_sem_w_2,0);
-initalsem(d_sem_w_3,0);
-
-initalsem(in_d_w_cs,1);
-initalsem(d_w_r_e,0);
-initalsem(d_1_ate,0);
-initalsem(d_2_ate,0);
-initalsem(d_3_ate,0);
-initalsem(d_find_sw_1,0);
-initalsem(d_find_sw_2,0);
-initalsem(d_find_sw_3,0);
-
-initalsem(d_f_sw_c_cs,1);
-initalsem(d_casket_1,0);
-initalsem(d_casket_2,0);
-initalsem(d_casket_3,0);
-initalsem(d_2_alw_st,0);
-initalsem(d_3_alw_st,0);
-
-initalsem(print_mutex, 1);
-
 // --------------- Functions --------------- //
 
 void Delay() {                              // Delay function
@@ -592,6 +544,53 @@ void dwarf_3_lr() {
 }
 
 main () {
+    // --------------- Initalize Functions --------------- //
+    initalsem(q_sem_1,1);
+    initalsem(q_sem_2,0);
+
+    initalsem(op_sem_1,0);
+    initalsem(op_sem_2,0);
+
+    initalsem(hm_sem_1,0);
+    initalsem(hm_sem_2,0);
+    initalsem(hm_sem_3,0);
+
+    initalsem(sw_sem_1,0);
+    initalsem(sw_sem_2,0);
+    initalsem(sw_sem_dl,0);
+    initalsem(sw_sem_4,0);
+    initalsem(sw_sem_l_4_open, 1);
+    initalsem(sw_sem_5,0);
+    initalsem(sw_sem_6,0);
+
+    initalsem(in_leave_cs,1);
+    initalsem(d_1_go_home,0);
+    initalsem(d_2_go_home,0);
+    initalsem(d_3_go_home,0);
+    initalsem(in_return_cs,1);
+    initalsem(d_sem_3,0);
+    initalsem(d_sem_w_1,0);
+    initalsem(d_sem_w_2,0);
+    initalsem(d_sem_w_3,0);
+
+    initalsem(in_d_w_cs,1);
+    initalsem(d_w_r_e,0);
+    initalsem(d_1_ate,0);
+    initalsem(d_2_ate,0);
+    initalsem(d_3_ate,0);
+    initalsem(d_find_sw_1,0);
+    initalsem(d_find_sw_2,0);
+    initalsem(d_find_sw_3,0);
+
+    initalsem(d_f_sw_c_cs,1);
+    initalsem(d_casket_1,0);
+    initalsem(d_casket_2,0);
+    initalsem(d_casket_3,0);
+    initalsem(d_2_alw_st,0);
+    initalsem(d_3_alw_st,0);
+
+    initalsem(print_mutex, 1);
+
     cout << "Once upon a time, there lived a lovely little princess named SW.\n";
     Delay();
 
