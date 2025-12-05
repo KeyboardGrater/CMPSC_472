@@ -1,76 +1,123 @@
 // Global Variables
-binarysem q_sem_1 = 1;                      // Allows the start of the queen/huntsman/SW part of the story, later dw
-binarysem q_sem_2 = 0;                      // Makes the queen wait for the huntsman to give her the stag heart
+binarysem q_sem_1;                      // Allows the start of the queen/huntsman/SW part of the story, later dw
+binarysem q_sem_2;                      // Makes the queen wait for the huntsman to give her the stag heart
 
-binarysem op_sem_1 = 0;                     // Checks if the Old Peddler should say her first line
-binarysem op_sem_2 = 0;                     // Checks if the Old Peddler should say her second line
+binarysem op_sem_1;                     // Checks if the Old Peddler should say her first line
+binarysem op_sem_2;                     // Checks if the Old Peddler should say her second line
 
-binarysem hm_sem_1 = 0;                     // Forces a wait until the Huntsman recives his orders from the Queen
-binarysem hm_sem_2 = 0;                     // Wait until SW follows HM into forest, allows the HM to tell SW Q plan
-binarysem hm_sem_3 = 0;                     // Waits until SW leaves him, then heads back to give the stag heart to Q
+binarysem hm_sem_1;                     // Forces a wait until the Huntsman recives his orders from the Queen
+binarysem hm_sem_2;                     // Wait until SW follows HM into forest, allows the HM to tell SW Q plan
+binarysem hm_sem_3;                     // Waits until SW leaves him, then heads back to give the stag heart to Q
 
-binarysem sw_sem_1 = 0;                     // Waits until HM ask SW to follow. Allows SW to follow HM
-binarysem sw_sem_2 = 0;                     // Waits until HM tells SW the plan. Allows SW to run into forest
-binarysem sw_sem_dl = 0;                    // Makes sure all the dwarves left house, before SW finds it
-binarysem sw_sem_4 = 0;                     // Allows SW to explain what happened, after all dwarves return home
+binarysem sw_sem_1;                     // Waits until HM ask SW to follow. Allows SW to follow HM
+binarysem sw_sem_2;                     // Waits until HM tells SW the plan. Allows SW to run into forest
+binarysem sw_sem_dl;                    // Makes sure all the dwarves left house, before SW finds it
+binarysem sw_sem_4;                     // Allows SW to explain what happened, after all dwarves return home
 
-binarysem sw_sem_l_4_open = 1;              // Critical Section lock on SW preapring lunch for dwarf N.
-binarysem sw_sem_5 = 0;                     // Activates when OP knocks on door, and allows SW to answer door
-binarysem sw_sem_6 = 0;                     // Semaphore for SW to eat the poisned apple, and fall into a coma
+binarysem sw_sem_l_4_open;              // Critical Section lock on SW preapring lunch for dwarf N.
+binarysem sw_sem_5;                     // Activates when OP knocks on door, and allows SW to answer door
+binarysem sw_sem_6;                     // Semaphore for SW to eat the poisned apple, and fall into a coma
 
 // --- Dwarven Section --- //
 int dwarf_counter = 0;                 // Tracks how many dwarves either left or returned, depends on where used
-binarysem in_leave_cs = 1;                  // CS lock for dwarves leaving the house for the first time.
+binarysem in_leave_cs;                  // CS lock for dwarves leaving the house for the first time.
 
 // Allows dwarf_N to go home after SW finds and sleeps in house
-binarysem d_1_go_home = 0;                  
-binarysem d_2_go_home = 0;
-binarysem d_3_go_home = 0;
+binarysem d_1_go_home;                  
+binarysem d_2_go_home;
+binarysem d_3_go_home;
 
-binarysem in_return_cs = 1;                 // CS lock for checking if curr dwarf is last home, and to print action
+binarysem in_return_cs;                 // CS lock for checking if curr dwarf is last home, and to print action
 
-binarysem d_sem_3 = 0;                      // CS lock for displaying the order of dwarves allowing her to stay
+binarysem d_sem_3;                      // CS lock for displaying the order of dwarves allowing her to stay
 
 // Activated after all three dwarves allow SW to stay. Allows dwarf N to start washing
-binarysem d_sem_w_1 = 0;                    
-binarysem d_sem_w_2 = 0;
-binarysem d_sem_w_3 = 0;
+binarysem d_sem_w_1;                    
+binarysem d_sem_w_2;
+binarysem d_sem_w_3;
 
-binarysem in_d_w_cs = 1;                    // Semaphore for critical section in dwarf washing
+binarysem in_d_w_cs;                    // Semaphore for critical section in dwarf washing
 
-semaphore d_w_r_e = 0;                      //A dwarf washed but is currently waiting for food made.Allows N to arr
+semaphore d_w_r_e;                      //A dwarf washed but is currently waiting for food made.Allows N to arr
 
 // Activated after SW made lunch for dwarf N. Allows dwarf N to eat food
-binarysem d_1_ate = 0;                      
-binarysem d_2_ate = 0;
-binarysem d_3_ate = 0;
+binarysem d_1_ate;                      
+binarysem d_2_ate;
+binarysem d_3_ate;
 
 // Activated after SW fell into a coma. Allows dwarf N to find SW
-binarysem d_find_sw_1 = 0;                    
-binarysem d_find_sw_2 = 0;
-binarysem d_find_sw_3 = 0;  
+binarysem d_find_sw_1;                    
+binarysem d_find_sw_2;
+binarysem d_find_sw_3;  
 
-binarysem d_f_sw_c_cs = 1;                  // Critical section for func of dwarves returning home and SW in coma
+binarysem d_f_sw_c_cs;                  // Critical section for func of dwarves returning home and SW in coma
 
 // Activated after all three dwarves have found SW. Allows dwarf N to carry casket
-binarysem d_casket_1 = 0;                   
-binarysem d_casket_2 = 0;
-binarysem d_casket_3 = 0;
+binarysem d_casket_1;                   
+binarysem d_casket_2;
+binarysem d_casket_3;
 
 // Semaphores in order to print, in order, the dwarfs allowing SW to stay. Used in d_allow_stay function
-binarysem d_2_alw_st = 0;
-binarysem d_3_alw_st = 0;
+binarysem d_2_alw_st;
+binarysem d_3_alw_st;
 
-binarysem print_mutex = 1;                  // Allows only one string to print at a time (CS for print func), atomic
+binarysem print_mutex;                  // Allows only one string to print at a time (CS for print func), atomic
 
 int wash_order [3];                         // List the dwarves in order of order of washing, not the dwarf number
                                             // Acts somewhat like a queue
 
-int i;                                      // Used for iteration and value tracking     
+int i = 0;                                      // Used for iteration and value tracking     
 int j = 0;                                  // Used for the iterating over the dwarves washing order
 int k = 0;                                  // Used for iteration in dwarf washing and dwarf return home second time
 
 int DELAY = 54;
+
+// --------------- Initalize Functions --------------- //
+initalsem(q_sem_1,1);
+initalsem(q_sem_2,0);
+
+initalsem(op_sem_1,0);
+initalsem(op_sem_2,0);
+
+initalsem(hm_sem_1,0);
+initalsem(hm_sem_2,0);
+initalsem(hm_sem_3,0);
+
+initalsem(sw_sem_1,0);
+initalsem(sw_sem_2,0);
+initalsem(sw_sem_dl,0);
+initalsem(sw_sem_4,0);
+initalsem(sw_sem_l_4_open, 1);
+initalsem(sw_sem_5,0);
+initalsem(sw_sem_6,0);
+
+initalsem(in_leave_cs,1);
+initalsem(d_1_go_home,0);
+initalsem(d_2_go_home,0);
+initalsem(d_3_go_home,0);
+initalsem(in_return_cs,1);
+initalsem(d_sem_3,0);
+initalsem(d_sem_w_1,0);
+initalsem(d_sem_w_2,0);
+initalsem(d_sem_w_3,0);
+
+initalsem(in_d_w_cs,1);
+initalsem(d_w_r_e,0);
+initalsem(d_1_ate,0);
+initalsem(d_2_ate,0);
+initalsem(d_3_ate,0);
+initalsem(d_find_sw_1,0);
+initalsem(d_find_sw_2,0);
+initalsem(d_find_sw_3,0);
+
+initalsem(d_f_sw_c_cs,1);
+initalsem(d_casket_1,0);
+initalsem(d_casket_2,0);
+initalsem(d_casket_3,0);
+initalsem(d_2_alw_st,0);
+initalsem(d_3_alw_st,0);
+
+initalsem(print_mutex, 1);
 
 // --------------- Functions --------------- //
 
@@ -210,7 +257,7 @@ void sw_lines(int line_number) {
             cout << "escapes, finds Dwarves' house, and falls asleep";
             break;
         case 3:
-            cout << "expalins to dwarves what happened";
+            cout << "explains to dwarves what happened";
             break;
         case 5:
             cout << "listens to knocking sounds and opens door";
@@ -306,7 +353,7 @@ void snow_white_script () {
     wait(sw_sem_6);                         // SW is given the poisoned apple
     sw_lines(6);                            // Eats the poisned apple
     Delay();
-    sw_lines(7);                            // <---------------------------- Could this cause an issue, I.e 7 before 6
+    sw_lines(7);                            // Falls into a coma
     // Immediately, after eating apple, she falls into a coma
 
     Delay();                                // Time passes before the dwarves return and find snow white
@@ -397,7 +444,7 @@ void dwarf_washing (int dwarf_num) {
 void dwarf_ate(int dwarf_num) {
     wait(print_mutex);                      // Locks global atomic printing
 
-    cout << "Dwarf " << dwarf_num << " eats lunch and foes to work.\n";
+    cout << "Dwarf " << dwarf_num << " eats lunch and goes to work.\n";
 
     signal(print_mutex);                    // Unlocks global atomic printing
 }
@@ -444,7 +491,7 @@ void dwarf_casket (int dwarf_num) {
 
     cout << "Dwarf " << dwarf_num << " places SW in glass casket as funeral for her, with other dwarves.\n";
 
-    signal(print_mutex);                    // Locks global atomic printing
+    signal(print_mutex);                    // Unlocks global atomic printing
 }
 
 void d_all_SW_stay (int dwarf_num) {
