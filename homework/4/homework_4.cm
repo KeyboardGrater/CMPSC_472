@@ -57,6 +57,10 @@ binarysem d_casket_1 = 0;
 binarysem d_casket_2 = 0;
 binarysem d_casket_3 = 0;
 
+// Semaphores in order to print, in order, the dwarfs allowing SW to stay. Used in d_allow_stay function
+binarysem d_2_alw_st = 0;
+binarysem d_3_alw_st = 0;
+
 binarysem print_mutex = 1;                  // Allows only one string to print at a time (CS for print func), atomic
 
 int wash_order [3];                         // List the dwarves in order of order of washing, not the dwarf number
@@ -157,7 +161,7 @@ void huntsman_lines (int line_number) {
     cout << "HM ";
 
     if (line_number == 1) {
-    cout << "takes SW into forset";
+    cout << "takes SW into forest";
     }
     else if (line_number == 2) {
     cout << "tells SW Queens's plan, and let SW run away";
@@ -200,7 +204,7 @@ void sw_lines(int line_number) {
 
     switch (line_number) {
         case 1:
-            cout << "follows HM and entered forst";
+            cout << "follows HM and entered forest";
             break;
         case 2:
             cout << "escapes, finds Dwarves' house, and falls asleep";
@@ -264,16 +268,15 @@ void snow_white_script () {
     signal(hm_sem_2);
 
     wait(sw_sem_2);                         // Waits until SW learns of the Queens plan
+    signal(hm_sem_3);                       // Signals the HM to head back and give the Queen the stags heart
     wait(sw_sem_dl);                        // Makes sure that all the dwarves leave before SW finds the house
-                                            // Both have to occure inorder for her to say that she ran and found house
+                           //sw_sem_2 and sw_sem_dl have to occure inorder for her to say that she ran and found house
     
     Delay();                                // Represents the time it takes for here to find house 
     sw_lines(2);    
     Delay();                                // Represents the time she spent asleep                        
-    
-    // Act 2 Begins
-    signal(hm_sem_3);                       // Signals the HM to head back and give the Queen the stags heart
-    
+
+
     // Signals dwarf N to go home, because SW has entered the house
     signal(d_1_go_home);                    
     signal(d_2_go_home);
@@ -444,11 +447,41 @@ void dwarf_casket (int dwarf_num) {
     signal(print_mutex);                    // Locks global atomic printing
 }
 
+void d_all_SW_stay (int dwarf_num) {
+    wait(print_mutex);                      // Locks global atomic printing  
+
+    cout << "Dwarf " << dwarf_num << " lets her stay as housemaid, with other dwarves.\n";
+
+    signal(print_mutex);                    // Unlocks global atomic printing
+}
+
+void d_allow_stay(int dwarf_num) {
+    switch (dwarf_num) {
+        case 1:
+            d_all_SW_stay(dwarf_num);       // Outputs dwarf 1 allows SW to stay
+            signal(d_2_alw_st);             // Allows the second dwarf to act on allowing SW to stay
+            break;
+        case 2:
+            d_all_SW_stay(dwarf_num);       // Outputs dwarf 2 allows SW to stay
+            signal(d_3_alw_st);             // Allows dwarf 3 to let SW stay
+            break;
+        case 3:
+            d_all_SW_stay(dwarf_num);       // Outputs dwarf 3 allows SW to stay
+            signal(d_sem_w_1);              // Signals all three dwarves to begin washing 
+            signal(d_sem_w_2);
+            signal(d_sem_w_3);
+            break;
+    }
+}
+
 void dwarf_1_lr() {
     d_leave_func(1);                        // Dwarf leaves the house
     
     wait(d_1_go_home);                      // Checks if SW has returned to the house
     d_returns_func(1);                      // Calls return home for the first time function
+
+    wait(d_sem_3);                          // This is signaled after SW explains what happened      
+    d_allow_stay(1);                        // Calls function to allow SW to stay
 
     wait(d_sem_w_1);                        // Allows dwarf to start washing, after all dwarves allow SW to stay
     dwarf_washing(1);                       // Calls dwarf washing function
@@ -470,6 +503,9 @@ void dwarf_2_lr() {
     wait(d_2_go_home);                      // Checks if SW has returned to the house
     d_returns_func(2);                      // Calls return home for the first time function
 
+    wait(d_2_alw_st);                       // Waits for dwarf 2 to be allowed to let SW to stay
+    d_allow_stay(2);                        // Calls function to allow SW to stay
+
     wait(d_sem_w_2);                        // Allows dwarf to start washing, after all dwarves allow SW to stay
     dwarf_washing(2);                       // Calls dwarf washing function
 
@@ -490,6 +526,9 @@ void dwarf_3_lr() {
     wait(d_3_go_home);                      // Checks if SW has returned to the house
     d_returns_func(3);                      // Calls return home for the first time function
 
+    wait(d_3_alw_st);                       // Waits for dwarf 3 to be allowed to let SW stay
+    d_allow_stay(3);                        // Calls function to allow SW to stay
+
     wait(d_sem_w_3);                        // Allows dwarf to start washing, after all dwarves allow SW to stay
     dwarf_washing(3);                       // Calls dwarf washing function
 
@@ -504,33 +543,6 @@ void dwarf_3_lr() {
     dwarf_casket(3);                        // Dwarf carries casket
     Delay();
 }
-
-void d_allow_stay (int dwarf_num) {
-    wait(print_mutex);                      // Locks global atomic printing  
-
-    cout << "Dwarf " << dwarf_num << " lets her stay as housemaid, with other dwarves.\n";
-
-    signal(print_mutex);                    // Unlocks global atomic printing
-}
-
-void dwarfs_shared() {
-    wait(d_sem_3);                          // This is signaled after SW explains what happened
-                                             
-    for (i = 1; i < 4; ++i) {               // Displays in order, the dwarves allowing her to stay Dw_1->2->3
-        d_allow_stay(i);
-    }
-
-    signal(d_sem_3);                        
-
-    if (i == 4) {                           // Signals all three dwarves to start washing
-        i = 0;                              // Sets back the global varaible i to 0
-        signal(d_sem_w_1);
-        signal(d_sem_w_2);
-        signal(d_sem_w_3);
-    }
-}
-
-
 
 main () {
     cout << "Once upon a time, there lived a lovely little princess named SW.\n";
@@ -548,6 +560,5 @@ main () {
         dwarf_1_lr();
         dwarf_2_lr();
         dwarf_3_lr();
-        dwarfs_shared();
     }
 }
