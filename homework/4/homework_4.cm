@@ -62,7 +62,16 @@ int i;
 int j = 0;
 int k = 0;
 
+int DELAY = 54;
+
 // --------------- Functions --------------- //
+
+void Delay() {
+    int i;
+    int DelayTime;
+    DelayTime = random (DELAY);
+    for (i = 0; i < DelayTime; i++);
+}
 
 void queens_lines (int line_number) {
     wait(print_mutex);
@@ -86,15 +95,18 @@ void queens_lines (int line_number) {
     signal(print_mutex);
 }
 void queens_script () {
-    wait(q_sem_1);                     // Allows only one to ever get past this point
+    wait(q_sem_1);                          // Allows only one to ever get past this point
     queens_lines(1);
+    Delay();
 
-    signal(hm_sem_1);           // The huntsman has recived his orders, thus he can carry them out
+    signal(hm_sem_1);                       // The huntsman has recived his orders, thus he can carry them out
     
     wait (q_sem_2);
     queens_lines(2);
+    Delay();                                // Time to plot her and disguise herself
+    
     queens_lines(3);
-
+    Delay();                                // Time to finish her disguise and leave as the peddler
 }
 
 void old_ped_lines (int line_number) {
@@ -120,13 +132,17 @@ void old_ped_lines (int line_number) {
 void old_ped_script () {
     wait(op_sem_1);
     old_ped_lines(1);
+    Delay();
+
     signal(sw_sem_5);
 
     
     wait(op_sem_2);                         // Wait for Snow White to answer the door
     old_ped_lines(2);
-    signal(sw_sem_6);                       // Signal allowing SW to eat the apple
+    Delay();
 
+    signal(sw_sem_6);                       // Signal allowing SW to eat the apple
+    Delay();                                // Time for the peddler to disappear
 }
 
 void huntsman_lines (int line_number) {
@@ -135,7 +151,7 @@ void huntsman_lines (int line_number) {
     cout << "HM ";
 
     if (line_number == 1) {
-    cout << "takes SW into forst";
+    cout << "takes SW into forset";
     }
     else if (line_number == 2) {
     cout << "tells SW Queens's plan, and let SW run away";
@@ -149,18 +165,27 @@ void huntsman_lines (int line_number) {
     signal(print_mutex);
 }
 void huntsman_script () {
-    wait(hm_sem_1);                   // Waits till the queen gives him orders
-    huntsman_lines(1);
-    signal(sw_sem_1);
-
-    wait(hm_sem_2);
-    huntsman_lines(2);
-    signal(sw_sem_2);
-
-    wait(hm_sem_3);
-    huntsman_lines(3);
-    signal(q_sem_2);
+    wait(hm_sem_1);                         // Waits till the Queen gives him orders
+    Delay();                                // This represents the time to get to the forest
     
+    huntsman_lines(1);                      // "Takes Snow White into the forest"
+    Delay();                                // Why add a delay here? 
+
+    signal(sw_sem_1);                       // Signals Snow Whites sem, which triggers her to say her first line
+
+
+
+    wait(hm_sem_2);                         // Waits until SW follows the huntsman into the forest
+    huntsman_lines(2);                      // Tells SW the Queen's plan
+    Delay();
+    signal(sw_sem_2);                       // Signals SW to escape and find the dwarves house
+
+    wait(hm_sem_3);                         // Waits for SW to escape and find the dwarves house
+    Delay();                                // Represents the time to get back to the Queen and give stag heart
+    huntsman_lines(3);                      // Huntsman gives the stag heart to the queen
+    Delay();
+    signal(q_sem_2);                        // Signals the Queen to realize the huntsman tricked her
+    Delay();
     // The huntsman job is finished.
 }
 
@@ -209,6 +234,7 @@ void sw_line_4_func () {
     wait(sw_sem_l_4_open);
     dwarf_num = wash_order[j];
     sw_line_4_msg(dwarf_num);
+    Delay();                                // Represents the amount of time it takes to prepare lunch
 
     switch (dwarf_num) {
         case 1:
@@ -228,11 +254,16 @@ void sw_line_4_func () {
 void snow_white_script () {
     wait(sw_sem_1);
     sw_lines(1);
+    Delay();                                // Time spent walking in the woods
+
     signal(hm_sem_2);
 
     wait(sw_sem_2);                
     wait(sw_sem_dl);                        // I have to make sure that they all leave before this step occures 
-    sw_lines(2);
+    
+    Delay();                                // Represents the time it takes for here to find house 
+    sw_lines(2);    
+    Delay();                                // Represents the time she spent asleep                        
     
     // Act 2 Begins
     signal(hm_sem_3);
@@ -242,6 +273,7 @@ void snow_white_script () {
     
     wait(sw_sem_4);
     sw_lines(3);
+    Delay();        
     signal(d_sem_3);
 
 
@@ -257,13 +289,18 @@ void snow_white_script () {
     // The old peddler knocks on the door
     wait(sw_sem_5);
     sw_lines(5);
+    Delay();                                // Represents the amount of time to open the door
     signal(op_sem_2);
 
     wait(sw_sem_6);                         // SW is given the poisoned apple
     sw_lines(6);                            // Eats the poisned apple
+    Delay();
     sw_lines(7);                            // <---------------------------- Could this cause an issue, I.e 7 before 6
     // Immediately, after eating apple, she falls into a coma
 
+    Delay();                                // Time passes before the dwarves return and find snow white
+
+    // Signals the dwarves to find an unconscious Snow White
     signal(d_find_sw_1);
     signal(d_find_sw_2);
     signal(d_find_sw_3);
@@ -282,7 +319,8 @@ void d_leave_func (int dwarf_num) {
     wait(in_leave_cs);
     
     print_dwarven_leave(dwarf_num);
-    
+    Delay();                                // Only one dwarf can fit through the door at a time
+
     dwarf_counter++;
 
     if (dwarf_counter == 3) {
@@ -314,10 +352,12 @@ void d_returns_func(int dwarf_num) {
 
     if (dwarf_counter == 2) {               // If 2, then that means that this will be the last dwarf to return
         print_d_r_last(dwarf_num);
+        Delay();                            
         signal(sw_sem_4);
     }
     else {
         print_d_r_NL(dwarf_num);
+        Delay();
         dwarf_counter++;
     }
 
@@ -337,7 +377,8 @@ void dwarf_washing (int dwarf_num) {
 
     wash_order[i] = dwarf_num;
     d_wash_msg(dwarf_num);
-    signal(d_w_r_e);                                        // WHy only once does it fire?
+    Delay();                                // Time to wash
+    signal(d_w_r_e);                                            // WHy only once does it fire?
     i++;
 
     signal(in_d_w_cs);
@@ -375,9 +416,10 @@ void d_ret_h_f_sw (int dwarf_num) {
     else {
         d_f_sw_in_c_lines(dwarf_num, 0);
     }
+    Delay();                                // Time for the dwarf to enter house and react
     k++;
 
-    if (k == 3) {
+    if (k == 3) {                           // Occurs all at once because they are carrying the casket
         signal(d_casket_1);
         signal(d_casket_2);
         signal(d_casket_3);
@@ -406,12 +448,14 @@ void dwarf_1_lr() {
 
     wait(d_1_ate);
     dwarf_ate(1);
+    Delay();
 
     wait(d_find_sw_1);
     d_ret_h_f_sw(1);
 
     wait(d_casket_1);
     dwarf_casket(1);
+    Delay();
 }
 void dwarf_2_lr() {
     d_leave_func(2);
@@ -424,12 +468,14 @@ void dwarf_2_lr() {
 
     wait(d_2_ate);
     dwarf_ate(2);
+    Delay();
 
     wait(d_find_sw_2);
     d_ret_h_f_sw(2);
 
     wait(d_casket_2);
     dwarf_casket(2);
+    Delay();
 }
 void dwarf_3_lr() {
     d_leave_func(3);
@@ -442,12 +488,14 @@ void dwarf_3_lr() {
 
     wait(d_3_ate);
     dwarf_ate(3);
+    Delay();
 
     wait(d_find_sw_3);
     d_ret_h_f_sw(3);
 
     wait(d_casket_3);
     dwarf_casket(3);
+    Delay();
 }
 
 void d_allow_stay (int dwarf_num) {
@@ -459,13 +507,13 @@ void d_allow_stay (int dwarf_num) {
 }
 
 void dwarfs_shared() {
-    wait(d_sem_3);
-
-    for (i = 1; i < 4; ++i) {
+    wait(d_sem_3);                          // This is signaled after SW explains what happened
+                                             
+    for (i = 1; i < 4; ++i) {               // Displays in order, the dwarves allowing her to stay Dw_1->2->3
         d_allow_stay(i);
     }
 
-    signal(d_sem_3);
+    signal(d_sem_3);                        // Do I need this?
 
     if (i == 4) {
         i = 0;
@@ -479,6 +527,7 @@ void dwarfs_shared() {
 
 main () {
     cout << "Once upon a time, there lived a lovely little princess named SW.\n";
+    Delay();
 
     // Act 0: Intro
 
