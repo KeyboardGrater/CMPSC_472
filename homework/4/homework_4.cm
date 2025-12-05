@@ -1,80 +1,85 @@
 // Global Variables
-binarysem q_sem_1 = 1;
-binarysem q_sem_2 = 0;
-binarysem q_sem_3 = 0;
+binarysem q_sem_1 = 1;                      // Allows the start of the queen/huntsman/SW part of the story, later dw
+binarysem q_sem_2 = 0;                      // Makes the queen wait for the huntsman to give her the stag heart
 
-binarysem op_sem_1 = 0;
-binarysem op_sem_2 = 0;
+binarysem op_sem_1 = 0;                     // Checks if the Old Peddler should say her first line
+binarysem op_sem_2 = 0;                     // Checks if the Old Peddler should say her second line
 
-binarysem hm_sem_1 = 0;
-binarysem hm_sem_2 = 0;
-binarysem hm_sem_3 = 0;
+binarysem hm_sem_1 = 0;                     // Forces a wait until the Huntsman recives his orders from the Queen
+binarysem hm_sem_2 = 0;                     // Wait until SW follows HM into forest, allows the HM to tell SW Q plan
+binarysem hm_sem_3 = 0;                     // Waits until SW leaves him, then heads back to give the stag heart to Q
 
-binarysem sw_sem_1 = 0;
-binarysem sw_sem_2 = 0;                      
-binarysem sw_sem_dl = 0;                    // Once sw_sem_2 and dl are passed, act one ends
-binarysem sw_sem_4 = 0;
+binarysem sw_sem_1 = 0;                     // Waits until HM ask SW to follow. Allows SW to follow HM
+binarysem sw_sem_2 = 0;                     // Waits until HM tells SW the plan. Allows SW to run into forest
+binarysem sw_sem_dl = 0;                    // Makes sure all the dwarves left house, before SW finds it
+binarysem sw_sem_4 = 0;                     // Allows SW to explain what happened, after all dwarves return home
 
-binarysem sw_sem_l_4_open = 1;
-binarysem sw_sem_5 = 0;
+binarysem sw_sem_l_4_open = 1;              // Critical Section lock on SW preapring lunch for dwarf N.
+binarysem sw_sem_5 = 0;                     // Activates when OP knocks on door, and allows SW to answer door
 binarysem sw_sem_6 = 0;                     // Semaphore for SW to eat the poisned apple, and fall into a coma
 
 // --- Dwarven Section --- //
 int dwarf_counter = 0;                 // Tracks how many dwarves either left or returned, depends on where used
-binarysem in_leave_cs = 1;
+binarysem in_leave_cs = 1;                  // CS lock for dwarves leaving the house for the first time.
 
-// Are we allowed to use bools, because if not
-binarysem d_1_go_home = 0;
+// Allows dwarf_N to go home after SW finds and sleeps in house
+binarysem d_1_go_home = 0;                  
 binarysem d_2_go_home = 0;
 binarysem d_3_go_home = 0;
 
-binarysem in_return_cs = 1;
+binarysem in_return_cs = 1;                 // CS lock for checking if curr dwarf is last home, and to print action
 
-binarysem d_sem_3 = 0;
+binarysem d_sem_3 = 0;                      // CS lock for displaying the order of dwarves allowing her to stay
 
-binarysem d_sem_w_1 = 0;
+// Activated after all three dwarves allow SW to stay. Allows dwarf N to start washing
+binarysem d_sem_w_1 = 0;                    
 binarysem d_sem_w_2 = 0;
 binarysem d_sem_w_3 = 0;
 
-binarysem in_d_w_cs = 1;                    // Semaphore for critical section in dwarf washing 
+binarysem in_d_w_cs = 1;                    // Semaphore for critical section in dwarf washing
 
-semaphore d_w_r_e = 0;                      // A dwarf washed but waiting for food made.                        
+semaphore d_w_r_e = 0;                      //A dwarf washed but is currently waiting for food made.Allows N to arr
 
-binarysem d_1_ate = 0;
+// Activated after SW made lunch for dwarf N. Allows dwarf N to eat food
+binarysem d_1_ate = 0;                      
 binarysem d_2_ate = 0;
 binarysem d_3_ate = 0;
 
-binarysem d_find_sw_1 = 0;                    // Sem for all the dwarves to return home and find Snow White
+// Activated after SW fell into a coma. Allows dwarf N to find SW
+binarysem d_find_sw_1 = 0;                    
 binarysem d_find_sw_2 = 0;
 binarysem d_find_sw_3 = 0;  
 
 binarysem d_f_sw_c_cs = 1;                  // Critical section for func of dwarves returning home and SW in coma
 
-binarysem d_casket_1 = 0;
+// Activated after all three dwarves have found SW. Allows dwarf N to carry casket
+binarysem d_casket_1 = 0;                   
 binarysem d_casket_2 = 0;
 binarysem d_casket_3 = 0;
 
-binarysem print_mutex = 1;                  // Allows only one string to print at a time (CS for print func)
+binarysem print_mutex = 1;                  // Allows only one string to print at a time (CS for print func), atomic
 
-int wash_order [3];
+int wash_order [3];                         // List the dwarves in order of order of washing, not the dwarf number
+                                            // Acts somewhat like a queue
 
-int i;                                      
-int j = 0;
-int k = 0;
+int i;                                      // Used for iteration and value tracking     
+int j = 0;                                  // Used for the iterating over the dwarves washing order
+int k = 0;                                  // Used for iteration in dwarf washing and dwarf return home second time
 
 int DELAY = 54;
 
 // --------------- Functions --------------- //
 
-void Delay() {
-    int i;
+void Delay() {                              // Delay function
+    int a;
     int DelayTime;
     DelayTime = random (DELAY);
-    for (i = 0; i < DelayTime; i++);
+    for (a = 0; a < DelayTime; a++);
 }
 
+// Print statement for the Queens lines, chooses which lines needs to be said based of line_number
 void queens_lines (int line_number) {
-    wait(print_mutex);
+    wait(print_mutex);                      // Mutex for global atomic CS of printing
     
     cout << "Queen ";
     
@@ -92,11 +97,11 @@ void queens_lines (int line_number) {
     
     cout << ".\n";
 
-    signal(print_mutex);
+    signal(print_mutex);                    // Unlocks Mutex for global atomic printing
 }
 void queens_script () {
     wait(q_sem_1);                          // Allows only one to ever get past this point
-    queens_lines(1);
+    queens_lines(1);                    
     Delay();
 
     signal(hm_sem_1);                       // The huntsman has recived his orders, thus he can carry them out
@@ -109,8 +114,9 @@ void queens_script () {
     Delay();                                // Time to finish her disguise and leave as the peddler
 }
 
+// Old peddler lines output (Atomic)
 void old_ped_lines (int line_number) {
-    wait(print_mutex);
+    wait(print_mutex);                      // Atomic lock for global printing 
     
     cout << "OP ";
     
@@ -125,16 +131,16 @@ void old_ped_lines (int line_number) {
     
     cout << ".\n";
 
-    signal(print_mutex);
+    signal(print_mutex);                    // Atomic unlock for global printing
 }
 
 
 void old_ped_script () {
-    wait(op_sem_1);
+    wait(op_sem_1);                         // Waits for the queen to finish her OP disguise
     old_ped_lines(1);
     Delay();
 
-    signal(sw_sem_5);
+    signal(sw_sem_5);                       // Signals SW to get up and answer the knocking at the door
 
     
     wait(op_sem_2);                         // Wait for Snow White to answer the door
@@ -146,7 +152,7 @@ void old_ped_script () {
 }
 
 void huntsman_lines (int line_number) {
-    wait(print_mutex);
+    wait(print_mutex);                      // Locks the global atomic printing
 
     cout << "HM ";
 
@@ -162,7 +168,7 @@ void huntsman_lines (int line_number) {
 
     cout << ".\n";
 
-    signal(print_mutex);
+    signal(print_mutex);                    // Unlocks the global atomic printing
 }
 void huntsman_script () {
     wait(hm_sem_1);                         // Waits till the Queen gives him orders
@@ -172,8 +178,6 @@ void huntsman_script () {
     Delay();                                // Why add a delay here? 
 
     signal(sw_sem_1);                       // Signals Snow Whites sem, which triggers her to say her first line
-
-
 
     wait(hm_sem_2);                         // Waits until SW follows the huntsman into the forest
     huntsman_lines(2);                      // Tells SW the Queen's plan
@@ -190,7 +194,7 @@ void huntsman_script () {
 }
 
 void sw_lines(int line_number) {
-    wait(print_mutex);
+    wait(print_mutex);                      // Locks the global lock printing
     
     cout << "SW ";
 
@@ -217,10 +221,11 @@ void sw_lines(int line_number) {
 
     cout << ".\n";
 
-    signal(print_mutex);
+    signal(print_mutex);                    // Unlocks the global atomic printing
 }
 
-void sw_line_4_msg (int dwarf_num) {
+// Prints SW preparing lunch for dwarf N, atomically.
+void sw_line_4_msg (int dwarf_num) {        
     wait(print_mutex);
 
     cout << "SW prepares lunch for Dwarf " << dwarf_num << ".\n";
@@ -231,12 +236,12 @@ void sw_line_4_msg (int dwarf_num) {
 void sw_line_4_func () {
     int dwarf_num;
 
-    wait(sw_sem_l_4_open);
-    dwarf_num = wash_order[j];
-    sw_line_4_msg(dwarf_num);
+    wait(sw_sem_l_4_open);                  // CS for SW preparing lunch 
+    dwarf_num = wash_order[j];              // Assigns dwarf number based of value in dwarf wash array
+    sw_line_4_msg(dwarf_num);               // Ouput for SW preparing lunch
     Delay();                                // Represents the amount of time it takes to prepare lunch
 
-    switch (dwarf_num) {
+    switch (dwarf_num) {                    // Signals dwarf N to eat
         case 1:
             signal(d_1_ate);
             break;
@@ -247,8 +252,8 @@ void sw_line_4_func () {
             signal(d_3_ate);
             break;
     }
-    j++;
-    signal(sw_sem_l_4_open);
+    j++;                                    // Increments wash order iterator
+    signal(sw_sem_l_4_open);                // Unlocks CS for SW to prepare Dwarf N's lunch  
 }
 
 void snow_white_script () {
@@ -258,36 +263,39 @@ void snow_white_script () {
 
     signal(hm_sem_2);
 
-    wait(sw_sem_2);                
-    wait(sw_sem_dl);                        // I have to make sure that they all leave before this step occures 
+    wait(sw_sem_2);                         // Waits until SW learns of the Queens plan
+    wait(sw_sem_dl);                        // Makes sure that all the dwarves leave before SW finds the house
+                                            // Both have to occure inorder for her to say that she ran and found house
     
     Delay();                                // Represents the time it takes for here to find house 
     sw_lines(2);    
     Delay();                                // Represents the time she spent asleep                        
     
     // Act 2 Begins
-    signal(hm_sem_3);
-    signal(d_1_go_home);
+    signal(hm_sem_3);                       // Signals the HM to head back and give the Queen the stags heart
+    
+    // Signals dwarf N to go home, because SW has entered the house
+    signal(d_1_go_home);                    
     signal(d_2_go_home);
     signal(d_3_go_home);
     
-    wait(sw_sem_4);
-    sw_lines(3);
+    wait(sw_sem_4);                         // Waits until the last dwarf to return home, wakes her up
+    sw_lines(3);                            // SW explains what happened
     Delay();        
-    signal(d_sem_3);
+    signal(d_sem_3);                        // Signals the dwarves allowing her to say 
 
 
-    for (k = 1; k < 4; ++k) {
-        wait(d_w_r_e);                         // Wait for a dwarf to finish washing
+    for (k = 1; k < 4; ++k) {               // Dwarfs in array in order of washing (first_to_wash->second->third)
+        wait(d_w_r_e);                      // Wait for a dwarf to finish washing. Allows Dwarf to be added to array
         sw_line_4_func();
     }
-    k = 0;                                     // Reset for use first in line of finding SW in a coma.
+    k = 0;                                  // Reset for use first in line of finding SW in a coma.
 
     // Once all the dwarves have left, let the Old Peddler arrive
     signal(op_sem_1);
 
     // The old peddler knocks on the door
-    wait(sw_sem_5);
+    wait(sw_sem_5);                         // Waits until the Old Peddler knocks on the door
     sw_lines(5);
     Delay();                                // Represents the amount of time to open the door
     signal(op_sem_2);
@@ -308,92 +316,92 @@ void snow_white_script () {
 
 // ----- Dwarf Functions ----- //
 void print_dwarven_leave(int dwarf_num) {
-    wait(print_mutex);
+    wait(print_mutex);                      // Locks global atomic printing
     
     cout << "Dwarf " << dwarf_num << " goes to work in morning.\n";
 
-    signal(print_mutex);
+    signal(print_mutex);                    // Unlocks global atomic printing
 }
 
 void d_leave_func (int dwarf_num) {
-    wait(in_leave_cs);
+    wait(in_leave_cs);                      // Locks CS for dwarves leaving house the first time
     
     print_dwarven_leave(dwarf_num);
-    Delay();                                // Only one dwarf can fit through the door at a time
+    Delay();                                
 
     dwarf_counter++;
 
     if (dwarf_counter == 3) {
-        dwarf_counter = 0;               // For use in when the dwarves return
-        signal(sw_sem_dl);
+        dwarf_counter = 0;                  // For use in when the dwarves return
+        signal(sw_sem_dl);                  // Once all dwarves left house, it allows SW to find the house
     }
 
-    signal(in_leave_cs);                    // Might be an issue
+    signal(in_leave_cs);                    // Unlocks the CS for dwarves leaving house the first time
 }
 
 void print_d_r_last(int dwarf_num) {
-    wait(print_mutex);
+    wait(print_mutex);                      // Locks CS for global atomic printing
 
     cout << "Dwarf " << dwarf_num << " comes home, finds SW, and wakes SW up.\n";
 
-    signal(print_mutex);
+    signal(print_mutex);                    // Unlocks CS for global atomic printing
 }
                                             
-void print_d_r_NL(int dwarf_num) {  // // NL stands for not last
-    wait(print_mutex);
+void print_d_r_NL(int dwarf_num) {          // NL stands for not last
+    wait(print_mutex);                      // Locks CS for global atomic printing
 
     cout << "Dwarf " << dwarf_num << " comes home, finds SW.\n";
 
-    signal(print_mutex);
+    signal(print_mutex);                    // Unlocs CS for global atomic printing
 }
 
 void d_returns_func(int dwarf_num) {
-    wait(in_return_cs);
+    wait(in_return_cs);                     // Locks CS for the dwarves returning home for the first time
 
     if (dwarf_counter == 2) {               // If 2, then that means that this will be the last dwarf to return
-        print_d_r_last(dwarf_num);
+        print_d_r_last(dwarf_num);          // Prints the last dwarf home being the one that wakes up SW
         Delay();                            
-        signal(sw_sem_4);
+        signal(sw_sem_4);                   // The last dwarf returns, triggers signal to allow SW wake up, explain
     }
     else {
-        print_d_r_NL(dwarf_num);
+        print_d_r_NL(dwarf_num);            // Prints the first two dwarves home finding SW
         Delay();
-        dwarf_counter++;
+        dwarf_counter++;                    // Increments the dwarfs that returned home counter
     }
 
-    signal(in_return_cs);
+    signal(in_return_cs);                   // Unlocks CS for the dwarves returning home for the first time
 }
 
 void d_wash_msg (int dwarf_num) {
-    wait(print_mutex);
+    wait(print_mutex);                      // Locks global atomic printing
 
     cout << "Dwarf " << dwarf_num << " washes for lunch.\n";
 
-    signal(print_mutex);
+    signal(print_mutex);                    // Unlocks global atomic printing
 }
 
 void dwarf_washing (int dwarf_num) {
-    wait(in_d_w_cs);
+    wait(in_d_w_cs);                        // Locks CS for dwarf washing
 
-    wash_order[i] = dwarf_num;
-    d_wash_msg(dwarf_num);
+    wash_order[i] = dwarf_num;              // Assigns the current dwarf num to array at index i
+    d_wash_msg(dwarf_num);                  // Calls Dwarf washes output
     Delay();                                // Time to wash
-    signal(d_w_r_e);                                            // WHy only once does it fire?
-    i++;
+    signal(d_w_r_e);                                            
+    i++;                                    // Increments wash order array
 
-    signal(in_d_w_cs);
+    signal(in_d_w_cs);                      // Unlocks CS for dwarf washing
 }
 void dwarf_ate(int dwarf_num) {
-    wait(print_mutex);
+    wait(print_mutex);                      // Locks global atomic printing
 
     cout << "Dwarf " << dwarf_num << " eats lunch and foes to work.\n";
 
-    signal(print_mutex);
+    signal(print_mutex);                    // Unlocks global atomic printing
 }
 
 // Dwarf finds Snow White in coma lines
 void d_f_sw_in_c_lines (int dwarf_number, int first_home) {
-    wait(print_mutex);
+    wait(print_mutex);                      // Locks global atomic printing 
 
     cout << "Dwarf " << dwarf_number << " comes home";
     
@@ -403,12 +411,12 @@ void d_f_sw_in_c_lines (int dwarf_number, int first_home) {
 
     cout << ".\n";
 
-    signal(print_mutex);
+    signal(print_mutex);                    // Unlocks global atomic printing
 }
 
 // Dwarf return home and find Snow White (in a coma)
 void d_ret_h_f_sw (int dwarf_num) {
-    wait(d_f_sw_c_cs);
+    wait(d_f_sw_c_cs);                      // Locks CS for dwarves to return home and find SW in coma
 
     if (k == 0) {                           // If k == 0: Then this is the first dwarf to return
         d_f_sw_in_c_lines(dwarf_num, 1);
@@ -425,85 +433,84 @@ void d_ret_h_f_sw (int dwarf_num) {
         signal(d_casket_3);
     }
 
-    signal(d_f_sw_c_cs);
-
+    signal(d_f_sw_c_cs);                    // Unlocks CS for dwarves returning home and finding SW in a coma
 }
 
 void dwarf_casket (int dwarf_num) {
-    wait(print_mutex);
+    wait(print_mutex);                      // Locks global atomic printing
 
     cout << "Dwarf " << dwarf_num << " places SW in glass casket as funeral for her, with other dwarves.\n";
 
-    signal(print_mutex);
+    signal(print_mutex);                    // Locks global atomic printing
 }
 
 void dwarf_1_lr() {
-    d_leave_func(1);
+    d_leave_func(1);                        // Dwarf leaves the house
     
-    wait(d_1_go_home);
-    d_returns_func(1);
+    wait(d_1_go_home);                      // Checks if SW has returned to the house
+    d_returns_func(1);                      // Calls return home for the first time function
 
-    wait(d_sem_w_1);
-    dwarf_washing(1);
+    wait(d_sem_w_1);                        // Allows dwarf to start washing, after all dwarves allow SW to stay
+    dwarf_washing(1);                       // Calls dwarf washing function
 
-    wait(d_1_ate);
-    dwarf_ate(1);
+    wait(d_1_ate);                          // Waits until SW has prepared a meal for the dwarf
+    dwarf_ate(1);                           // Dwarf eats function call
     Delay();
 
-    wait(d_find_sw_1);
-    d_ret_h_f_sw(1);
+    wait(d_find_sw_1);                      // Wait until SW falls into a coma, then allows dwarf to return home
+    d_ret_h_f_sw(1);                        // Dwarf returns home and finds SW in a coma function
 
-    wait(d_casket_1);
-    dwarf_casket(1);
+    wait(d_casket_1);                       // Wait until all the dwarf return home
+    dwarf_casket(1);                        // Dwarf carries casket
     Delay();
 }
 void dwarf_2_lr() {
-    d_leave_func(2);
+    d_leave_func(2);                        // Dwarf leaves the house
     
-    wait(d_2_go_home);
-    d_returns_func(2);
+    wait(d_2_go_home);                      // Checks if SW has returned to the house
+    d_returns_func(2);                      // Calls return home for the first time function
 
-    wait(d_sem_w_2);
-    dwarf_washing(2);
+    wait(d_sem_w_2);                        // Allows dwarf to start washing, after all dwarves allow SW to stay
+    dwarf_washing(2);                       // Calls dwarf washing function
 
-    wait(d_2_ate);
-    dwarf_ate(2);
+    wait(d_2_ate);                          // Waits until SW has prepared a meal for the dwarf
+    dwarf_ate(2);                           // Dwarf eats function call
     Delay();
 
-    wait(d_find_sw_2);
-    d_ret_h_f_sw(2);
+    wait(d_find_sw_2);                      // Wait until SW falls into a coma, then allows dwarf to return home
+    d_ret_h_f_sw(2);                        // Dwarf returns home and finds SW in a coma function
 
-    wait(d_casket_2);
-    dwarf_casket(2);
+    wait(d_casket_2);                       // Wait until all the dwarf return home
+    dwarf_casket(2);                        // Dwarf carries casket
     Delay();
 }
 void dwarf_3_lr() {
-    d_leave_func(3);
+    d_leave_func(3);                        // Dwarf leaves the house
 
-    wait(d_3_go_home);
-    d_returns_func(3);
+    wait(d_3_go_home);                      // Checks if SW has returned to the house
+    d_returns_func(3);                      // Calls return home for the first time function
 
-    wait(d_sem_w_3);
-    dwarf_washing(3);
+    wait(d_sem_w_3);                        // Allows dwarf to start washing, after all dwarves allow SW to stay
+    dwarf_washing(3);                       // Calls dwarf washing function
 
-    wait(d_3_ate);
-    dwarf_ate(3);
+    wait(d_3_ate);                          // Waits until SW has prepared a meal for the dwarf
+    dwarf_ate(3);                           // Dwarf eats function call
     Delay();
 
-    wait(d_find_sw_3);
-    d_ret_h_f_sw(3);
+    wait(d_find_sw_3);                      // Wait until SW falls into a coma, then allows dwarf to return home
+    d_ret_h_f_sw(3);                        // Dwarf returns home and finds SW in a coma function
 
-    wait(d_casket_3);
-    dwarf_casket(3);
+    wait(d_casket_3);                       // Wait until all the dwarf return home
+    dwarf_casket(3);                        // Dwarf carries casket
     Delay();
 }
 
 void d_allow_stay (int dwarf_num) {
-    wait(print_mutex);
+    wait(print_mutex);                      // Locks global atomic printing  
 
     cout << "Dwarf " << dwarf_num << " lets her stay as housemaid, with other dwarves.\n";
 
-    signal(print_mutex);
+    signal(print_mutex);                    // Unlocks global atomic printing
 }
 
 void dwarfs_shared() {
@@ -513,10 +520,10 @@ void dwarfs_shared() {
         d_allow_stay(i);
     }
 
-    signal(d_sem_3);                        // Do I need this?
+    signal(d_sem_3);                        
 
-    if (i == 4) {
-        i = 0;
+    if (i == 4) {                           // Signals all three dwarves to start washing
+        i = 0;                              // Sets back the global varaible i to 0
         signal(d_sem_w_1);
         signal(d_sem_w_2);
         signal(d_sem_w_3);
@@ -531,7 +538,7 @@ main () {
 
     // Act 0: Intro
 
-    cobegin {
+    cobegin {                               // Starts all the actors
         // Act 1: Learning of the queens intentions
         queens_script();
         old_ped_script();
